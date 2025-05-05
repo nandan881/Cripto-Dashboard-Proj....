@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto Dashboard</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      width: 250px;
+    }
+    button {
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+    }
+    img {
+      width: 24px;
+      height: 24px;
+      vertical-align: middle;
+    }
+    .green { color: #00ff00; }
+    .red { color: #ff3b3b; }
+  </style>
+</head>
+<body>
+  <h1>Crypto Dashboard</h1>
+
+  <input type="text" id="searchInput" placeholder="Search By Name or Symbol" />
+  <button onclick="searchData()">Search</button>
+  <button onclick="sortByMarketCap()">Sort By Mkt Cap</button>
+  <button onclick="sortByPercentage()">Sort by %</button>
+
+  <table id="cryptoTable">
+    <thead>
+      <tr>
+        <th>Icon</th>
+        <th>Name</th>
+        <th>Symbol</th>
+        <th>Price</th>
+        <th>Total Volume</th>
+        <th>Change %</th>
+        <th>Market Cap</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_URL =
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false';
+
+    let cryptoData = [];
+
+    // Fetch using async/await
+    async function fetchDataAsync() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        cryptoData = data;
+        renderTable(data);
+      } catch (err) {
+        console.error('Error fetching data (async):', err);
+      }
+    }
+
+    // Fetch using .then
+    function fetchDataThen() {
+      fetch(API_URL)
+        .then((res) => res.json())
+        .then((data) => {
+          cryptoData = data;
+          renderTable(data);
+        })
+        .catch((err) => console.error('Error fetching data (.then):', err));
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector('#cryptoTable tbody');
+      tbody.innerHTML = '';
+
+      data.forEach((coin) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><img src="${coin.image}" alt="${coin.name}" /></td>
+          <td>${coin.name}</td>
+          <td>${coin.symbol.toUpperCase()}</td>
+          <td>$${coin.current_price.toLocaleString()}</td>
+          <td>$${coin.total_volume.toLocaleString()}</td>
+          <td class="${coin.price_change_percentage_24h >= 0 ? 'green' : 'red'}">
+            ${coin.price_change_percentage_24h.toFixed(2)}%
+          </td>
+          <td>Mkt Cap : $${coin.market_cap.toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function searchData() {
+      const input = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = cryptoData.filter(
+        (coin) =>
+          coin.name.toLowerCase().includes(input) ||
+          coin.symbol.toLowerCase().includes(input)
+      );
+      renderTable(filtered);
+    }
+
+    function sortByMarketCap() {
+      const sorted = [...cryptoData].sort((a, b) => b.market_cap - a.market_cap);
+      renderTable(sorted);
+    }
+
+    function sortByPercentage() {
+      const sorted = [...cryptoData].sort(
+        (a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h
+      );
+      renderTable(sorted);
+    }
+
+    // Choose one fetch method to call on load:
+    fetchDataAsync(); // or use fetchDataThen();
+  </script>
+</body>
+</html>
